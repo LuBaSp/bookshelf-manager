@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Statistiche</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><span class="icon"></span> Statistiche della Libreria Ceccaroni</h1>
+      <a href="index.html" class="stats-link">← Torna alla Libreria</a>
+    </header>
+
+    <section class="library-section">
+      <div id="statsContent">
+        <p>Caricamento statistiche...</p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const statsContent = document.getElementById('statsContent');
+    const library = JSON.parse(localStorage.getItem('personalLibrary')) || [];
+
+    const totalBooks = library.length;
+    const readBooks = library.filter(b => b.read).length;
+    const unreadBooks = totalBooks - readBooks;
+
+    statsContent.innerHTML = `
+      <ul>
+        <li><strong>📚 Totale libri:</strong> ${totalBooks}</li>
+        <li><strong>⌛ Da leggere:</strong> ${unreadBooks}</li>
+        <li><strong>✅ Libri letti:</strong> ${readBooks}</li>
+        <li><strong>🕮 Percentuale letti:</strong> ${totalBooks > 0 ? ((readBooks / totalBooks) * 100).toFixed(1) + '%' : '0%'}</li>
+      </ul>
+    `;
+  </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Libreria Personale</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Playfair+Display:wght@700&display=swap">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><span class="icon">🕮</span> Libreria Ceccaroni</h1>
+      <p class="subtitle">Organizza la tua collezione di libri</p>
+      <a href="stats.html" class="stats-link">📊 Statistiche</a>
+    </header>
+
+    <div class="search-section">
+      <div class="search-container">
+        <input id="searchInput" type="text" placeholder="Cerca libri..." />
+        <span class="search-icon">🔍</span>
+      </div>
+      <div id="results" class="results"></div>
+    </div>
+
+    <section class="library-section">
+      <h2><span class="icon"></span>La mia libreria</h2>
+      
+      <div class="library-controls">
+        <div class="filter-section">
+          <select id="filterStatus">
+            <option value="all">Tutti i libri</option>
+            <option value="read">Solo letti</option>
+            <option value="unread">Da leggere</option>
+          </select>
+          
+          <select id="filterSource">
+            <option value="all">Tutte le fonti</option>
+            <option value="google">Google Books</option>
+            <option value="openlibrary">Open Library</option>
+          </select>
+        </div>
+        
+        <div class="sort-section">
+          <select id="sortBy">
+            <option value="title-asc">Titolo (A-Z)</option>
+            <option value="title-desc">Titolo (Z-A)</option>
+            <option value="author-asc">Autore (A-Z)</option>
+            <option value="date-desc">Data (Più recente)</option>
+            <option value="date-asc">Data (Più vecchio)</option>
+          </select>
+        </div>
+      </div>
+      
+      <ul id="library" class="library"></ul>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
