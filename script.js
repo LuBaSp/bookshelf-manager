@@ -4,7 +4,6 @@ const libraryList = document.getElementById('library');
 
 let personalLibrary = [];
 
-// --- LocalStorage functions ---
 function saveLibrary() {
   localStorage.setItem('personalLibrary', JSON.stringify(personalLibrary));
 }
@@ -13,13 +12,12 @@ function loadLibrary() {
   const data = localStorage.getItem('personalLibrary');
   if (data) {
     personalLibrary = JSON.parse(data);
-    filterAndSortLibrary(); // Applica i filtri al caricamento
+    filterAndSortLibrary();
   } else {
     personalLibrary = [];
   }
 }
 
-// --- Create book element in search results ---
 function createBookDiv({title, authors, publishedDate, publisher, thumbnail, source}, bookId) {
   const div = document.createElement('div');
   div.className = 'result-item';
@@ -34,11 +32,37 @@ function createBookDiv({title, authors, publishedDate, publisher, thumbnail, sou
         <div class="source-label">Fonte: ${source}</div>
       </div>
     </div>
-    <button>Aggiungi</button>
+    <div class="add-book-controls">
+      <select class="location-select-add">
+        <option value="">Scegli posizione...</option>
+        <option value="Camera Ilaria">Camera Ilaria</option>
+        <option value="Camera Paolo">Camera Paolo</option>
+        <option value="Salotto">Salotto</option>
+        <option value="Piano di sopra">Piano di sopra</option>
+        <option value="Taverna">Taverna</option>
+        <option value="Cesenatico">Cesenatico</option>
+      </select>
+      <input type="number" class="rating-input" min="0" max="10" step="0.5" placeholder="Voto (0-10)">
+      <button>Aggiungi</button>
+    </div>
   `;
 
   div.querySelector('button').addEventListener('click', () => {
     if (!personalLibrary.find(b => b.id === bookId)) {
+      const locationSelect = div.querySelector('.location-select-add');
+      const ratingInput = div.querySelector('.rating-input');
+      
+      if (!locationSelect.value) {
+        alert('Per favore seleziona una posizione per il libro');
+        return;
+      }
+
+      const rating = parseFloat(ratingInput.value);
+      if (isNaN(rating)) {
+        alert('Per favore inserisci un voto valido tra 0 e 10');
+        return;
+      }
+
       const newBook = { 
         id: bookId, 
         title, 
@@ -47,33 +71,96 @@ function createBookDiv({title, authors, publishedDate, publisher, thumbnail, sou
         publisher, 
         thumbnail, 
         source, 
-        read: false 
+        read: false,
+        location: locationSelect.value,
+        rating: rating,
+        loaned: false,
+        loanedTo: '',
+        loanDate: null
       };
       personalLibrary.push(newBook);
       addBookToLibrary(newBook);
       saveLibrary();
-      filterAndSortLibrary(); // Riapplica i filtri dopo l'aggiunta
+      filterAndSortLibrary();
     }
   });
 
   return div;
 }
 
-// --- Add book to personal library UI ---
 function addBookToLibrary(book) {
   const li = document.createElement('li');
   li.dataset.bookId = book.id;
   li.dataset.read = book.read;
+  li.dataset.location = book.location || 'Non specificato';
+  li.dataset.rating = book.rating !== undefined ? book.rating : 'N/D';  // <-- Questa è la modifica importante
+  li.dataset.loaned = book.loaned || false;
+  
+  if (book.loaned) {
+    li.classList.add('loaned');
+  }
+
   li.innerHTML = `
-    <img src="${book.thumbnail || 'https://via.placeholder.com/50x70?text=No+Img'}" alt="Copertina" />
-    <div class="book-info">
-      <div><strong>${book.title}</strong></div>
-      <div>di ${book.authors || 'Autore sconosciuto'}</div>
-      <div>Pubblicato: ${book.publishedDate || 'N/D'}</div>
-      <div>Editore: ${book.publisher || 'N/D'}</div>
+    <div class="book-container">
+      <div class="book-image">
+        <img src="${book.thumbnail || 'https://via.placeholder.com/70x100?text=No+Img'}" alt="Copertina" />
+      </div>
+      <div class="book-details">
+        <div class="detail-row">
+          <span class="detail-label">Titolo:</span>
+          <span class="detail-value">${book.title}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Autore:</span>
+          <span class="detail-value">${book.authors || 'Autore sconosciuto'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Pubblicato:</span>
+          <span class="detail-value">${book.publishedDate || 'N/D'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Editore:</span>
+          <span class="detail-value">${book.publisher || 'N/D'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Posizione:</span>
+          <select class="location-select">
+            <option value="">Scegli...</option>
+            <option value="Camera Ilaria" ${book.location === 'Camera Ilaria' ? 'selected' : ''}>Camera Ilaria</option>
+            <option value="Camera Paolo" ${book.location === 'Camera Paolo' ? 'selected' : ''}>Camera Paolo</option>
+            <option value="Salotto" ${book.location === 'Salotto' ? 'selected' : ''}>Salotto</option>
+            <option value="Piano di sopra" ${book.location === 'Piano di sopra' ? 'selected' : ''}>Piano di sopra</option>
+            <option value="Taverna" ${book.location === 'Taverna' ? 'selected' : ''}>Taverna</option>
+            <option value="Cesenatico" ${book.location === 'Cesenatico' ? 'selected' : ''}>Cesenatico</option>
+          </select>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Voto:</span>
+          <input type="number" class="rating-input" min="0" max="10" step="0.5" value="${book.rating || ''}" placeholder="0-10">
+        </div>
+        
+        <div class="detail-row combined-controls">
+          <div class="checkbox-group">
+            <label class="read-label"><input type="checkbox" class="read-checkbox" ${book.read ? 'checked' : ''} /> Letto</label>
+            <label class="loan-label">
+              <input type="checkbox" class="loan-checkbox" ${book.loaned ? 'checked' : ''} />
+              Prestito
+            </label>
+          </div>
+          <div class="loan-details" style="${book.loaned ? '' : 'display: none;'}">
+            <input type="text" class="loan-to-input" value="${book.loanedTo || ''}" placeholder="A chi?" size="10">
+            <input type="date" class="loan-date-input" value="${book.loanDate || new Date().toISOString().split('T')[0]}">
+          </div>
+        </div>
+
+        
+      </div>
+
+      <div class="book-actions">
+        <button class="remove-button">×</button>
+      </div>
+
     </div>
-    <label class="read-label"><input type="checkbox" class="read-checkbox" ${book.read ? 'checked' : ''} /> Letto</label>
-    <button class="remove-button">Rimuovi</button>
   `;
 
   const checkbox = li.querySelector('.read-checkbox');
@@ -84,8 +171,74 @@ function addBookToLibrary(book) {
     if (bookInLib) {
       bookInLib.read = e.target.checked;
       li.dataset.read = e.target.checked;
+      // Mantieni esplicitamente il rating
+      li.dataset.rating = bookInLib.rating !== undefined ? bookInLib.rating : 'N/D';
       saveLibrary();
-      filterAndSortLibrary(); // Riapplica i filtri dopo la modifica
+      filterAndSortLibrary();
+    }
+  });
+
+  li.querySelector('.location-select').addEventListener('change', (e) => {
+    const bookInLib = personalLibrary.find(b => b.id === book.id);
+    if (bookInLib) {
+      bookInLib.location = e.target.value;
+      li.dataset.location = e.target.value || 'Non specificato';
+      saveLibrary();
+      filterAndSortLibrary();
+    }
+  });
+
+  li.querySelector('.rating-input').addEventListener('change', (e) => {
+    const bookInLib = personalLibrary.find(b => b.id === book.id);
+    if (bookInLib) {
+      const rating = parseFloat(e.target.value);
+      bookInLib.rating = isNaN(rating) ? null : rating;
+      li.dataset.rating = isNaN(rating) ? 'N/D' : rating;
+      saveLibrary();
+    }
+  });
+
+  const loanCheckbox = li.querySelector('.loan-checkbox');
+  const loanDetails = li.querySelector('.loan-details');
+  const loanToInput = li.querySelector('.loan-to-input');
+  const loanDateInput = li.querySelector('.loan-date-input');
+
+  loanCheckbox.addEventListener('change', (e) => {
+    const bookInLib = personalLibrary.find(b => b.id === book.id);
+    if (bookInLib) {
+      bookInLib.loaned = e.target.checked;
+      li.dataset.loaned = e.target.checked;
+      
+      if (e.target.checked) {
+        loanDetails.style.display = 'block';
+        bookInLib.loanedTo = loanToInput.value;
+        bookInLib.loanDate = loanDateInput.value || new Date().toISOString().split('T')[0];
+        li.classList.add('loaned');
+      } else {
+        loanDetails.style.display = 'none';
+        bookInLib.loanedTo = '';
+        bookInLib.loanDate = null;
+        li.classList.remove('loaned');
+      }
+      saveLibrary();
+      checkLoanStatus(li, bookInLib);
+    }
+  });
+
+  loanToInput.addEventListener('change', (e) => {
+    const bookInLib = personalLibrary.find(b => b.id === book.id);
+    if (bookInLib && bookInLib.loaned) {
+      bookInLib.loanedTo = e.target.value;
+      saveLibrary();
+    }
+  });
+
+  loanDateInput.addEventListener('change', (e) => {
+    const bookInLib = personalLibrary.find(b => b.id === book.id);
+    if (bookInLib && bookInLib.loaned) {
+      bookInLib.loanDate = e.target.value || new Date().toISOString().split('T')[0];
+      saveLibrary();
+      checkLoanStatus(li, bookInLib);
     }
   });
 
@@ -97,32 +250,51 @@ function addBookToLibrary(book) {
     }
   });
 
+  if (book.loaned) {
+    checkLoanStatus(li, book);
+  }
+
   libraryList.appendChild(li);
 }
 
-// --- Filter and sort library ---
+function checkLoanStatus(li, book) {
+  if (!book.loaned || !book.loanDate) return;
+
+  const loanDate = new Date(book.loanDate);
+  const now = new Date();
+  const diffInMinutes = Math.floor((now - loanDate) / (1000 * 60));
+
+  if (diffInMinutes > 1) {
+    li.classList.add('loan-overdue');
+  } else {
+    li.classList.remove('loan-overdue');
+  }
+}
+
 function filterAndSortLibrary() {
   const statusFilter = document.getElementById('filterStatus').value;
   const sourceFilter = document.getElementById('filterSource').value;
+  const locationFilter = document.getElementById('filterLocation').value;
   const sortOption = document.getElementById('sortBy').value;
 
   let filtered = [...personalLibrary];
 
-  // Apply status filter
   if (statusFilter === 'read') {
     filtered = filtered.filter(book => book.read);
   } else if (statusFilter === 'unread') {
     filtered = filtered.filter(book => !book.read);
   }
 
-  // Apply source filter
   if (sourceFilter === 'google') {
     filtered = filtered.filter(book => book.source === 'Google Books');
   } else if (sourceFilter === 'openlibrary') {
     filtered = filtered.filter(book => book.source === 'Open Library');
   }
 
-  // Apply sorting
+  if (locationFilter !== 'all') {
+    filtered = filtered.filter(book => book.location === locationFilter);
+  }
+
   filtered.sort((a, b) => {
     switch (sortOption) {
       case 'title-asc':
@@ -140,7 +312,6 @@ function filterAndSortLibrary() {
     }
   });
 
-  // Render filtered library
   renderFilteredLibrary(filtered);
 }
 
@@ -149,7 +320,6 @@ function renderFilteredLibrary(books) {
   books.forEach(book => addBookToLibrary(book));
 }
 
-// --- Fetch from Google Books API ---
 async function fetchGoogleBooks(query) {
   const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=30&printType=books&orderBy=relevance`;
   const response = await fetch(url);
@@ -170,7 +340,6 @@ async function fetchGoogleBooks(query) {
   });
 }
 
-// --- Fetch from Open Library API ---
 async function fetchOpenLibrary(query) {
   const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=30`;
   const response = await fetch(url);
@@ -190,7 +359,6 @@ async function fetchOpenLibrary(query) {
   });
 }
 
-// --- Search input handler with debounce ---
 let timeoutId;
 searchInput.addEventListener('input', () => {
   clearTimeout(timeoutId);
@@ -221,10 +389,54 @@ searchInput.addEventListener('input', () => {
   }, 400);
 });
 
-// --- On load ---
+setInterval(() => {
+  document.querySelectorAll('#library li[data-loaned="true"]').forEach(li => {
+    const bookId = li.dataset.bookId;
+    const book = personalLibrary.find(b => b.id === bookId);
+    if (book) {
+      checkLoanStatus(li, book);
+    }
+  });
+}, 60000);
+
 loadLibrary();
 
-// Add event listeners for filters and sort
 document.getElementById('filterStatus').addEventListener('change', filterAndSortLibrary);
 document.getElementById('filterSource').addEventListener('change', filterAndSortLibrary);
+document.getElementById('filterLocation').addEventListener('change', filterAndSortLibrary);
 document.getElementById('sortBy').addEventListener('change', filterAndSortLibrary);
+
+// Aggiungi in fondo al file
+const searchLibraryInput = document.getElementById('searchLibraryInput');
+const clearSearchBtns = document.querySelectorAll('.clear-search');
+
+searchLibraryInput.addEventListener('input', () => {
+  const query = searchLibraryInput.value.toLowerCase();
+  const books = document.querySelectorAll('#library li');
+  
+  books.forEach(book => {
+    const title = book.querySelector('.detail-value').textContent.toLowerCase();
+    const author = book.querySelector('.detail-row:nth-child(2) .detail-value').textContent.toLowerCase();
+    
+    if (title.includes(query) || author.includes(query)) {
+      book.style.display = 'flex';
+    } else {
+      book.style.display = 'none';
+    }
+  });
+});
+
+clearSearchBtns.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const container = e.target.closest('.search-container, .search-library-container');
+    const input = container.querySelector('input');
+    input.value = '';
+    input.dispatchEvent(new Event('input'));
+    
+    if (container.classList.contains('search-library-container')) {
+      document.querySelectorAll('#library li').forEach(li => {
+        li.style.display = 'flex';
+      });
+    }
+  });
+});

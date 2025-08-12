@@ -12,19 +12,23 @@
     <header>
       <h1><span class="icon">🕮</span> Libreria Ceccaroni</h1>
       <p class="subtitle">Organizza la tua collezione di libri</p>
-      <a href="stats.html" class="stats-link">📊 Statistiche</a>
+      <div class="header-links">
+        <a href="stats.html" class="stats-link">📊 Statistiche</a>
+        <a href="wishlist.html" class="stats-link">📝 Lista Desideri</a>
+      </div>
     </header>
 
     <div class="search-section">
       <div class="search-container">
         <input id="searchInput" type="text" placeholder="Cerca libri..." />
         <span class="search-icon">🔍</span>
+        <span class="clear-search">×</span>
       </div>
       <div id="results" class="results"></div>
     </div>
 
     <section class="library-section">
-      <h2><span class="icon"></span>La mia libreria</h2>
+      <h2><span class="icon"></span>Contenuto della libreria</h2>
       
       <div class="library-controls">
         <div class="filter-section">
@@ -39,6 +43,16 @@
             <option value="google">Google Books</option>
             <option value="openlibrary">Open Library</option>
           </select>
+
+          <select id="filterLocation">
+            <option value="all">Tutte le posizioni</option>
+            <option value="Camera Ilaria">Camera Ilaria</option>
+            <option value="Camera Paolo">Camera Paolo</option>
+            <option value="Salotto">Salotto</option>
+            <option value="Piano di sopra">Piano di sopra</option>
+            <option value="Taverna">Taverna</option>
+            <option value="Cesenatico">Cesenatico</option>
+          </select>
         </div>
         
         <div class="sort-section">
@@ -50,6 +64,12 @@
             <option value="date-asc">Data (Più vecchio)</option>
           </select>
         </div>
+
+        <div class="search-library-container">
+          <input id="searchLibraryInput" type="text" placeholder="Cerca nella tua libreria..." />
+          <span class="clear-search">×</span>
+        </div>
+
       </div>
       
       <ul id="library" class="library"></ul>

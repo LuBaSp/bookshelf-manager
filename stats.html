@@ -27,13 +27,78 @@
     const readBooks = library.filter(b => b.read).length;
     const unreadBooks = totalBooks - readBooks;
 
+    const ratedBooks = library.filter(b => b.rating != null);
+    const ratings = ratedBooks.map(b => b.rating);
+    const averageRating = ratings.length > 0 ? (ratings.reduce((a, b) => a + b, 0) / ratings.length) : 0;
+    const minRating = ratings.length > 0 ? Math.min(...ratings) : 0;
+    const maxRating = ratings.length > 0 ? Math.max(...ratings) : 0;
+
+    const loanedBooks = library.filter(b => b.loaned).length;
+    const overdueBooks = library.filter(b => {
+      if (!b.loaned || !b.loanDate) return false;
+      const loanDate = new Date(b.loanDate);
+      const now = new Date();
+      return Math.floor((now - loanDate) / (1000 * 60)) > 1;
+    }).length;
+
+    const authorRatings = ratedBooks.reduce((acc, book) => {
+      const author = book.authors || 'Autore sconosciuto';
+      if (!acc[author]) {
+        acc[author] = { sum: 0, count: 0 };
+      }
+      acc[author].sum += book.rating;
+      acc[author].count++;
+      return acc;
+    }, {});
+
+    const authorsWithAvgRating = Object.entries(authorRatings)
+      .map(([author, data]) => ({
+        author,
+        avgRating: data.sum / data.count,
+        count: data.count
+      }))
+      .sort((a, b) => b.avgRating - a.avgRating)
+      .slice(0, 5);
+
+    const topAuthorsHTML = authorsWithAvgRating.map(author => 
+      `<li><strong>✍️ ${author.author}:</strong> ${author.avgRating.toFixed(1)}/10 (${author.count} libri)</li>`
+    ).join('');
+
     statsContent.innerHTML = `
-      <ul>
-        <li><strong>📚 Totale libri:</strong> ${totalBooks}</li>
-        <li><strong>⌛ Da leggere:</strong> ${unreadBooks}</li>
-        <li><strong>✅ Libri letti:</strong> ${readBooks}</li>
-        <li><strong>🕮 Percentuale letti:</strong> ${totalBooks > 0 ? ((readBooks / totalBooks) * 100).toFixed(1) + '%' : '0%'}</li>
-      </ul>
+      <div class="stats-grid">
+        <div class="stats-card">
+          <h3>📊 Statistiche generali</h3>
+          <ul>
+            <li><strong>📚 Totale libri:</strong> ${totalBooks}</li>
+            <li><strong>⌛ Da leggere:</strong> ${unreadBooks}</li>
+            <li><strong>✅ Libri letti:</strong> ${readBooks}</li>
+            <li><strong>🕮 Percentuale letti:</strong> ${totalBooks > 0 ? ((readBooks / totalBooks) * 100).toFixed(1) + '%' : '0%'}</li>
+          </ul>
+        </div>
+        
+        <div class="stats-card">
+          <h3>⭐ Statistiche valutazioni</h3>
+          <ul>
+            <li><strong>📊 Media voti:</strong> ${averageRating.toFixed(1)}/10</li>
+            <li><strong>⬇️ Voto più basso:</strong> ${minRating}/10</li>
+            <li><strong>⬆️ Voto più alto:</strong> ${maxRating}/10</li>
+            <li><strong>📖 Libri valutati:</strong> ${ratedBooks.length} (${totalBooks > 0 ? ((ratedBooks.length / totalBooks) * 100).toFixed(1) + '%' : '0%'})</li>
+          </ul>
+        </div>
+        
+        <div class="stats-card">
+          <h3>📚 Statistiche prestiti</h3>
+          <ul>
+            <li><strong>📖 Libri in prestito:</strong> ${loanedBooks} (${totalBooks > 0 ? ((loanedBooks / totalBooks) * 100).toFixed(1) + '%' : '0%'})</li>
+            <li><strong>⚠️ Prestiti scaduti:</strong> ${overdueBooks}</li>
+          </ul>
+        </div>
+        
+        <div class="stats-card">
+          <h3>🏆 Autori migliori</h3>
+          <ul>${topAuthorsHTML}</ul>
+        </div>
+      </div>
     `;
   </script>
 </body>

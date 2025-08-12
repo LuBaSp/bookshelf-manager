@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lista Desideri</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Playfair+Display:wght@700&display=swap">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><span class="icon">📝</span> Lista Desideri</h1>
+      <p class="subtitle">Libri che desideri acquistare</p>
+      <a href="index.html" class="stats-link">← Torna alla Libreria</a>
+    </header>
+
+    <div class="wishlist-section">
+      <div class="add-wishlist-item">
+        <input id="wishlistInput" type="text" placeholder="Titolo del libro..." />
+        <input id="wishlistAuthor" type="text" placeholder="Autore (opzionale)" />
+        <button id="addWishlistBtn">Aggiungi</button>
+      </div>
+      
+      <ul id="wishlist"></ul>
+    </div>
+  </div>
+
+  <script>
+    const wishlistInput = document.getElementById('wishlistInput');
+    const wishlistAuthor = document.getElementById('wishlistAuthor');
+    const addWishlistBtn = document.getElementById('addWishlistBtn');
+    const wishlistUl = document.getElementById('wishlist');
+
+    let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+
+    function renderWishlist() {
+      wishlistUl.innerHTML = '';
+      wishlist.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div class="wishlist-item">
+            <span class="wishlist-title">${item.title}</span>
+            ${item.author ? `<span class="wishlist-author">di ${item.author}</span>` : ''}
+            <button class="remove-wishlist" data-index="${index}">×</button>
+          </div>
+        `;
+        wishlistUl.appendChild(li);
+      });
+    }
+
+    addWishlistBtn.addEventListener('click', () => {
+      const title = wishlistInput.value.trim();
+      const author = wishlistAuthor.value.trim();
+      
+      if (!title) {
+        alert('Inserisci almeno il titolo del libro');
+        return;
+      }
+      
+      wishlist.push({ title, author });
+      localStorage.setItem('wishlist', JSON.stringify(wishlist));
+      wishlistInput.value = '';
+      wishlistAuthor.value = '';
+      renderWishlist();
+    });
+
+    wishlistUl.addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-wishlist')) {
+        const index = e.target.dataset.index;
+        wishlist.splice(index, 1);
+        localStorage.setItem('wishlist', JSON.stringify(wishlist));
+        renderWishlist();
+      }
+    });
+
+    renderWishlist();
+  </script>
+</body>
+</html>
