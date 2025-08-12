@@ -307,6 +307,10 @@ function filterAndSortLibrary() {
         return (b.publishedDate || '').localeCompare(a.publishedDate || '');
       case 'date-asc':
         return (a.publishedDate || '').localeCompare(b.publishedDate || '');
+      case 'rating-desc':
+        return (b.rating || 0) - (a.rating || 0);
+      case 'rating-asc':
+        return (a.rating || 0) - (b.rating || 0);
       default:
         return 0;
     }
