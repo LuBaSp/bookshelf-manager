@@ -42,7 +42,7 @@ function createBookDiv({title, authors, publishedDate, publisher, thumbnail, sou
         <option value="Taverna">Taverna</option>
         <option value="Cesenatico">Cesenatico</option>
       </select>
-      <input type="number" class="rating-input" min="0" max="10" step="0.5" placeholder="Voto (0-10)">
+      <input type="number" class="rating-input" min="0" max="10" step="0.5" placeholder="Voto (0-10, opzionale)" inputmode="numeric">
       <button>Aggiungi</button>
     </div>
   `;
@@ -57,9 +57,11 @@ function createBookDiv({title, authors, publishedDate, publisher, thumbnail, sou
         return;
       }
 
-      const rating = parseFloat(ratingInput.value);
-      if (isNaN(rating)) {
-        alert('Per favore inserisci un voto valido tra 0 e 10');
+      const ratingValue = ratingInput.value;
+      const rating = ratingValue ? parseFloat(ratingValue) : null;
+      
+      if (ratingValue && (isNaN(rating) || rating < 0 || rating > 10)) {
+        alert('Per favore inserisci un voto valido tra 0 e 10 o lascia vuoto');
         return;
       }
 
@@ -76,7 +78,8 @@ function createBookDiv({title, authors, publishedDate, publisher, thumbnail, sou
         rating: rating,
         loaned: false,
         loanedTo: '',
-        loanDate: null
+        loanDate: null,
+        favorite: false
       };
       personalLibrary.push(newBook);
       addBookToLibrary(newBook);
@@ -93,7 +96,7 @@ function addBookToLibrary(book) {
   li.dataset.bookId = book.id;
   li.dataset.read = book.read;
   li.dataset.location = book.location || 'Non specificato';
-  li.dataset.rating = book.rating !== undefined ? book.rating : 'N/D';  // <-- Questa è la modifica importante
+  li.dataset.rating = book.rating !== undefined ? book.rating : 'N/D';
   li.dataset.loaned = book.loaned || false;
   
   if (book.loaned) {
@@ -152,14 +155,12 @@ function addBookToLibrary(book) {
             <input type="date" class="loan-date-input" value="${book.loanDate || new Date().toISOString().split('T')[0]}">
           </div>
         </div>
-
-        
       </div>
 
       <div class="book-actions">
+        <button class="favorite-button ${book.favorite ? 'favorited' : ''}">★</button>
         <button class="remove-button">×</button>
       </div>
-
     </div>
   `;
 
@@ -171,7 +172,6 @@ function addBookToLibrary(book) {
     if (bookInLib) {
       bookInLib.read = e.target.checked;
       li.dataset.read = e.target.checked;
-      // Mantieni esplicitamente il rating
       li.dataset.rating = bookInLib.rating !== undefined ? bookInLib.rating : 'N/D';
       saveLibrary();
       filterAndSortLibrary();
@@ -191,9 +191,28 @@ function addBookToLibrary(book) {
   li.querySelector('.rating-input').addEventListener('change', (e) => {
     const bookInLib = personalLibrary.find(b => b.id === book.id);
     if (bookInLib) {
-      const rating = parseFloat(e.target.value);
-      bookInLib.rating = isNaN(rating) ? null : rating;
-      li.dataset.rating = isNaN(rating) ? 'N/D' : rating;
+      const ratingValue = e.target.value;
+      
+      if (ratingValue === '') {
+        bookInLib.rating = null;
+        li.dataset.rating = 'N/D';
+        saveLibrary();
+        return;
+      }
+
+      const rating = parseFloat(ratingValue);
+      
+      if (isNaN(rating) || rating < 0 || rating > 10) {
+        alert('Per favore inserisci un voto valido tra 0 e 10');
+        e.target.value = '';
+        bookInLib.rating = null;
+        li.dataset.rating = 'N/D';
+        saveLibrary();
+        return;
+      }
+
+      bookInLib.rating = rating;
+      li.dataset.rating = rating;
       saveLibrary();
     }
   });
@@ -242,6 +261,16 @@ function addBookToLibrary(book) {
     }
   });
 
+  li.querySelector('.favorite-button').addEventListener('click', (e) => {
+    const bookInLib = personalLibrary.find(b => b.id === book.id);
+    if (bookInLib) {
+      bookInLib.favorite = !bookInLib.favorite;
+      e.target.classList.toggle('favorited', bookInLib.favorite);
+      saveLibrary();
+      filterAndSortLibrary();
+    }
+  });
+
   li.querySelector('.remove-button').addEventListener('click', () => {
     if (confirm(`Sei sicuro di voler rimuovere "${book.title}" dalla libreria?`)) {
       personalLibrary = personalLibrary.filter(b => b.id !== book.id);
@@ -276,6 +305,7 @@ function filterAndSortLibrary() {
   const sourceFilter = document.getElementById('filterSource').value;
   const locationFilter = document.getElementById('filterLocation').value;
   const sortOption = document.getElementById('sortBy').value;
+  const searchQuery = document.getElementById('searchLibraryInput').value.toLowerCase();
 
   let filtered = [...personalLibrary];
 
@@ -283,6 +313,8 @@ function filterAndSortLibrary() {
     filtered = filtered.filter(book => book.read);
   } else if (statusFilter === 'unread') {
     filtered = filtered.filter(book => !book.read);
+  } else if (statusFilter === 'favorite') {
+    filtered = filtered.filter(book => book.favorite);
   }
 
   if (sourceFilter === 'google') {
@@ -293,6 +325,13 @@ function filterAndSortLibrary() {
 
   if (locationFilter !== 'all') {
     filtered = filtered.filter(book => book.location === locationFilter);
+  }
+
+  if (searchQuery) {
+    filtered = filtered.filter(book => 
+      book.title.toLowerCase().includes(searchQuery) || 
+      (book.authors && book.authors.toLowerCase().includes(searchQuery))
+    );
   }
 
   filtered.sort((a, b) => {
@@ -321,7 +360,12 @@ function filterAndSortLibrary() {
 
 function renderFilteredLibrary(books) {
   libraryList.innerHTML = '';
-  books.forEach(book => addBookToLibrary(book));
+  books.forEach(book => {
+    const li = addBookToLibrary(book);
+    if (book.favorite) {
+      li.querySelector('.favorite-button').classList.add('favorited');
+    }
+  });
 }
 
 async function fetchGoogleBooks(query) {
@@ -410,24 +454,11 @@ document.getElementById('filterSource').addEventListener('change', filterAndSort
 document.getElementById('filterLocation').addEventListener('change', filterAndSortLibrary);
 document.getElementById('sortBy').addEventListener('change', filterAndSortLibrary);
 
-// Aggiungi in fondo al file
 const searchLibraryInput = document.getElementById('searchLibraryInput');
 const clearSearchBtns = document.querySelectorAll('.clear-search');
 
 searchLibraryInput.addEventListener('input', () => {
-  const query = searchLibraryInput.value.toLowerCase();
-  const books = document.querySelectorAll('#library li');
-  
-  books.forEach(book => {
-    const title = book.querySelector('.detail-value').textContent.toLowerCase();
-    const author = book.querySelector('.detail-row:nth-child(2) .detail-value').textContent.toLowerCase();
-    
-    if (title.includes(query) || author.includes(query)) {
-      book.style.display = 'flex';
-    } else {
-      book.style.display = 'none';
-    }
-  });
+  filterAndSortLibrary();
 });
 
 clearSearchBtns.forEach(btn => {
@@ -438,9 +469,7 @@ clearSearchBtns.forEach(btn => {
     input.dispatchEvent(new Event('input'));
     
     if (container.classList.contains('search-library-container')) {
-      document.querySelectorAll('#library li').forEach(li => {
-        li.style.display = 'flex';
-      });
+      filterAndSortLibrary();
     }
   });
 });
